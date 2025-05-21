@@ -6,7 +6,7 @@ import requests
 app = Flask(__name__)
 
 # Load mô hình đã train
-model = joblib.load('isolation_forest_model.joblib')
+model = joblib.load('RugPullDetectionModel/isolation_forest_model.joblib')
 
 @app.route('/')
 def home():
