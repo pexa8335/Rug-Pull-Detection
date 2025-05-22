@@ -14,7 +14,7 @@ SCALER_PATH = 'RugPullDetectionModel/scaler_1.5.1.pkl'
 model = joblib.load(MODEL_PATH)
 scaler = joblib.load(SCALER_PATH)
 
-OPTIMAL_THRESHOLD = 0.0457 #found in code
+OPTIMAL_THRESHOLD = 0.0149 #found in code
 
 @app.route('/')
 def home():
