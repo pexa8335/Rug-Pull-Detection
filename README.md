@@ -45,7 +45,7 @@ We used LIME (Local Interpretable Model-Agnostic Explanations) for explainabilit
 ## 📂 Dataset: SolRPDS
 The SolRPDS dataset is a publicly available, large-scale dataset designed for analyzing rug pulls in the Solana DeFi ecosystem.
 
-🔹 Source: Extracted from 3.69 billion Solana blockchain transactions
+🔹 Source: Extracted from 3.69 billion Solana blockchain transactions from 2021 - 2024
 
 🔹 License: Creative Commons Attribution 4.0 International (CC BY 4.0)
 
