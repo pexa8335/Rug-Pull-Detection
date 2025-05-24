@@ -9,8 +9,8 @@ import os
 app = Flask(__name__)
 
 # Load model & scaler
-MODEL_PATH = 'isolation_forest_model_new_data.joblib'
-SCALER_PATH = 'scaler_new_data.pkl'
+MODEL_PATH = 'RugPullDetectionModel/isolation_forest_model_new_data.joblib'
+SCALER_PATH = 'RugPullDetectionModel/scaler_new_data.pkl'
 
 model = joblib.load(MODEL_PATH)
 scaler = joblib.load(SCALER_PATH)
