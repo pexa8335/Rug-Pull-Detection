@@ -9,35 +9,25 @@ import os
 app = Flask(__name__)
 
 # Load model & scaler
-MODEL_PATH = 'RugPullDetectionModel/isolation_forest_model_1.5.1.joblib'
-SCALER_PATH = 'RugPullDetectionModel/scaler_1.5.1.pkl'
+MODEL_PATH = 'isolation_forest_model_new_data.joblib'
+SCALER_PATH = 'scaler_new_data.pkl'
 
 model = joblib.load(MODEL_PATH)
 scaler = joblib.load(SCALER_PATH)
 
-OPTIMAL_THRESHOLD = 0.0149 # found in code
+OPTIMAL_THRESHOLD = 0.2059 # found in code
 
-# --- LIME Explainer Setup ---
-# Cố gắng lấy tên feature từ scaler
+
 try:
     feature_names_for_lime = scaler.feature_names_in_.tolist()
 except AttributeError:
-    # Fallback nếu scaler được lưu với phiên bản scikit-learn cũ hơn
-    # Hoặc nếu bạn biết chính xác số lượng và tên features
+
     print("Warning: scaler.feature_names_in_ not available. Manually defining feature names based on notebook context.")
-    # Dựa trên notebook, X_train sau khi drop có 19 cột (cell 15)
-    # Đây là một giả định, cần kiểm tra lại với notebook của bạn
     num_features_from_notebook = 19
     feature_names_for_lime = [f"feature_{i+1}" for i in range(num_features_from_notebook)]
-    # Ví dụ: ['TOTAL_ADDED_LIQUIDITY', ..., 'INACTIVITY_STATUS_Inactive']
 
-# QUAN TRỌNG: Dữ liệu huấn luyện cho LIME
-# TỐT NHẤT: Tải dữ liệu huấn luyện đã scale (X_scaled.values) từ notebook
-# Ví dụ: training_features_for_lime_values = np.load('X_scaled_values.npy')
-# Nếu không có, chúng ta tạo dữ liệu dummy (ít chính xác hơn cho LIME)
 num_training_features = len(feature_names_for_lime)
-# Tạo 100 mẫu dummy với phân phối ngẫu nhiên, chỉ để LIME có thể chạy
-# Thay thế bằng dữ liệu huấn luyện thực tế đã scale để có giải thích tốt nhất
+
 dummy_training_data_for_lime = np.random.rand(100, num_training_features)
 print(f"LIME Explainer initialized with {num_training_features} features: {feature_names_for_lime[:5]}...")
 
@@ -45,30 +35,21 @@ print(f"LIME Explainer initialized with {num_training_features} features: {featu
 class_names_for_lime = ['Anomaly', 'Normal'] # 0: Anomaly (-1 model), 1: Normal (1 model)
 
 explainer = lime.lime_tabular.LimeTabularExplainer(
-    training_data=dummy_training_data_for_lime, # SỬ DỤNG DỮ LIỆU HUẤN LUYỆN THỰC TẾ ĐÃ SCALE Ở ĐÂY
+    training_data=dummy_training_data_for_lime,
     feature_names=feature_names_for_lime,
     class_names=class_names_for_lime,
-    mode='classification', # Vì chúng ta đang phân loại Anomaly/Normal
+    mode='classification', 
     verbose=False,
-    random_state=42 # Để có thể tái tạo kết quả
+    random_state=42 
 )
 
-# Hàm predict_fn cho LIME
-def lime_predict_fn(X_lime_input_np):
-    # X_lime_input_np là một mảng numpy 2D
-    # model.decision_function trả về điểm anomaly (điểm thấp hơn -> bất thường hơn)
-    decision_scores = model.decision_function(X_lime_input_np)
 
-    # Chuyển đổi điểm thành pseudo-probabilities cho [P(Anomaly), P(Normal)]
-    # Isolation Forest: điểm cao hơn là "normal" hơn.
-    # Sigmoid có thể được dùng để squash điểm vào khoảng (0,1)
-    # P(Normal) ~ sigmoid(score). Điểm = 0 là ranh giới.
+def lime_predict_fn(X_lime_input_np):
+    decision_scores = model.decision_function(X_lime_input_np)
     prob_normal = 1 / (1 + np.exp(-decision_scores))
     prob_anomaly = 1 - prob_normal
-
-    # LIME mong đợi đầu ra là (n_samples, n_classes)
     return np.vstack((prob_anomaly, prob_normal)).T
-# --- End LIME Explainer Setup ---
+
 
 
 @app.route('/')
@@ -82,8 +63,6 @@ def predict():
         if not data:
             return jsonify({"error": "No input data provided"}), 400
 
-        # Sử dụng feature_names_for_lime đã được xác định ở trên
-        # Điều này đảm bảo thứ tự cột nhất quán
         try:
             df = pd.DataFrame([data], columns=feature_names_for_lime)
         except ValueError as ve:
@@ -120,8 +99,7 @@ def predict():
         # --- LIME Explanation ---
         lime_explanation_list = []
         try:
-            instance_to_explain_np = df_scaled[0] # Dữ liệu đã scale của một mẫu
-            # LIME cần index của class (0 cho Anomaly, 1 cho Normal)
+            instance_to_explain_np = df_scaled[0] 
             predicted_class_index_lime = 0 if prediction_label == -1 else 1
 
             explanation = explainer.explain_instance(
@@ -130,7 +108,7 @@ def predict():
                 num_features=10, # Số lượng feature muốn hiển thị trong giải thích
                 labels=(predicted_class_index_lime,) # Giải thích cho lớp được dự đoán
             )
-            # Lấy giải thích dưới dạng danh sách các (feature, weight)
+
             lime_explanation_list = explanation.as_list(label=predicted_class_index_lime)
         except Exception as lime_e:
             app.logger.error(f"LIME explanation error: {str(lime_e)}")
