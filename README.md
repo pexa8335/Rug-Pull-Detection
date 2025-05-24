@@ -3,19 +3,19 @@
 This project develops a machine learning model to detect rug pull scams within the Solana decentralized finance (DeFi) ecosystem. Rug pulls are a form of fraud where malicious developers abandon projects after withdrawing investor funds, causing financial loss.
 
 The methodology is inspired by:
-
-SolRPDS: A Dataset for Analyzing Rug Pulls in Solana Decentralized Finance
-Abdulrahman Alhaidari et al., CODASPY 2025
+**[SolRPDS: A Dataset for Analyzing Rug Pulls in Solana Decentralized Finance](https://arxiv.org/abs/2504.07132)** - Abdulrahman Alhaidari et al., CODASPY 2025
 
 We utilize the SolRPDS dataset, which was curated from 3.69 billion Solana transactions, offering a robust foundation for identifying rug pull patterns.
 
 ## 🧪 Methodology
 Our approach leverages the Isolation Forest algorithm, a popular anomaly detection technique that excels in high-dimensional, unlabeled datasets like blockchain records.
 
-Why Isolation Forest?
+**Why Isolation Forest?**
+
 It isolates anomalies instead of profiling normal data points, making it ideal for detecting rare and subtle fraud behaviors.
 
-Optimization Metric:
+**Optimization Metric:**
+
 We tune the threshold to maximize the F2-score, giving higher weight to recall — crucial in fraud detection, where catching more scams is prioritized over minimizing false positives.
 
 ## 📊 Evaluation Results
@@ -54,7 +54,7 @@ The SolRPDS dataset is a publicly available, large-scale dataset designed for an
 ## 📖 Citation
 If you use the dataset in your work, please cite the original authors:
 
-Abdulrahman Alhaidari, Bhavani Kalal, Balaji Palanisamy, and Shamik Sural. 2025. SolRPDS: A Dataset for Analyzing Rug Pulls in Solana Decentralized Finance. In Proceedings of the 15th ACM Conference on Data and Application Security and Privacy (CODASPY '25). ACM, New York, NY, USA. (To appear)
+>Abdulrahman Alhaidari, Bhavani Kalal, Balaji Palanisamy, and Shamik Sural. 2025. SolRPDS: A Dataset for Analyzing Rug Pulls in Solana Decentralized Finance. In Proceedings of the 15th ACM Conference on Data and Application Security and Privacy (CODASPY '25). ACM, New York, NY, USA. (To appear)
 
 ## 👥 Team Members
 
