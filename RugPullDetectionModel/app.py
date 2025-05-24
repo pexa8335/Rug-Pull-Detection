@@ -82,15 +82,18 @@ def predict():
         anomaly_score = model.decision_function(df_scaled)
         score_value = anomaly_score[0]
 
+        warning = "No specific warning"
         if score_value < OPTIMAL_THRESHOLD:
-            prediction_label = -1 # Anomaly
+            prediction_label = -1  # Anomaly
             prediction_string = "Anomaly"
             if score_value < -0.1:
-                 warning = "Anomaly - Rug Pull Project! 🚨"
+                warning = "Anomaly - Rug Pull Project! 🚨"
         else:
-            prediction_label = 1 # Normal
+            prediction_label = 1  # Normal
             prediction_string = "Normal"
             warning = "Normal - Quite safe project."
+
+
 
         # --- LIME Explanation ---
         lime_explanation_list = []
