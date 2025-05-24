@@ -57,12 +57,15 @@ If you use the dataset in your work, please cite the original authors:
 Abdulrahman Alhaidari, Bhavani Kalal, Balaji Palanisamy, and Shamik Sural. 2025. SolRPDS: A Dataset for Analyzing Rug Pulls in Solana Decentralized Finance. In Proceedings of the 15th ACM Conference on Data and Application Security and Privacy (CODASPY '25). ACM, New York, NY, USA. (To appear)
 
 ## 👥 Team Members
-Name	Role
-Phan Duc Anh	Team Leader, Machine Learning, Management
-Nguyen Tran Lam	Idea Contributor, Documentation
-Nguyen Minh Dai	Backend Developer
-Vo Van Quoc	Frontend Developer
-Vo Tuan Hung	Frontend Developer
+
+| Name              | Role                                      |
+|-------------------|-------------------------------------------|
+| Phan Duc Anh      | Team Leader, Machine Learning, Management |
+| Nguyen Tran Lam   | Idea Contributor, Documentation           |
+| Nguyen Minh Dai   | Backend Developer                         |
+| Vo Van Quoc       | Frontend Developer                        |
+| Vo Tuan Hung      | Frontend Developer                        |
+
 
 ## 📜 License & Usage
 This project is licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0).
