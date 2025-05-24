@@ -86,11 +86,7 @@ def predict():
             prediction_label = -1 # Anomaly
             prediction_string = "Anomaly"
             if score_value < -0.1:
-                 warning = "Anomaly - Highly Rug Pull Project! 🚨"
-            elif score_value < 0.0:
-                 warning = "Anomaly - Suspicious Rug Pull Activity!"
-            else:
-                 warning = "Warning - Potential Anomaly Detected."
+                 warning = "Anomaly - Rug Pull Project! 🚨"
         else:
             prediction_label = 1 # Normal
             prediction_string = "Normal"
@@ -171,11 +167,7 @@ def test_sample():
         prediction_label_test = -1
         prediction_string_test = "Anomaly"
         if score_value_test < -0.1:
-             warning_test = "Anomaly - Highly Rug Pull Project! 🚨"
-        elif score_value_test < 0.0:
-             warning_test = "Anomaly - Suspicious Rug Pull Activity!"
-        else:
-             warning_test = "Warning - Potential Anomaly Detected."
+             warning_test = "Anomaly - Rug Pull Project! 🚨"
     else:
         prediction_label_test = 1
         prediction_string_test = "Normal"
