@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-down {
+  opacity: 0;
+  animation: fadeInDown 0.6s ease-out forwards;
+}
+
+/* Các độ trễ khác nhau để tạo hiệu ứng xuất hiện lần lượt */
+.fade-delay-1 { animation-delay: 0.2s; }
+.fade-delay-2 { animation-delay: 0.4s; }
+.fade-delay-3 { animation-delay: 0.6s; }
+.fade-delay-4 { animation-delay: 0.8s; }
+.fade-delay-5 { animation-delay: 1s; }
+.fade-delay-6 { animation-delay: 1.2s; }
+.fade-delay-7 { animation-delay: 1.4s; }
+.fade-delay-8 { animation-delay: 1.6s; }
+.fade-delay-9 { animation-delay: 1.8s; }
+.fade-delay-10 { animation-delay: 2.0s; }
+.fade-delay-11 { animation-delay: 2.2s; }
+.fade-delay-12 { animation-delay: 2.4s; }
+.fade-delay-13 { animation-delay: 2.6s; }
+.fade-delay-14 { animation-delay: 2.8s; }
+.fade-delay-15 { animation-delay: 3.0s; }
+.fade-delay-16 { animation-delay: 3.2s; }
+.fade-delay-17 { animation-delay: 3.4s; }
+
+
