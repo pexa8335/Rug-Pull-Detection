@@ -1,12 +1,15 @@
 from flask import Flask, request, jsonify
 import pandas as pd
 import joblib
-import numpy as np # Cần cho LIME và predict_fn
+import numpy as np
 import lime
 import lime.lime_tabular
 import os
+import logging # Thêm import logging
+from logging.handlers import RotatingFileHandler # Thêm import này
 
 app = Flask(__name__)
+app.config['JSON_AS_ASCII'] = False # QUAN TRỌNG: Để hiển thị emoji đúng
 
 # Load model & scaler
 MODEL_PATH = 'RugPullDetectionModel/isolation_forest_model_new_data.joblib'
@@ -21,13 +24,13 @@ OPTIMAL_THRESHOLD = 0.2059 # found in code
 try:
     feature_names_for_lime = scaler.feature_names_in_.tolist()
 except AttributeError:
-
     print("Warning: scaler.feature_names_in_ not available. Manually defining feature names based on notebook context.")
-    num_features_from_notebook = 19
+    num_features_from_notebook = 19 # Giả sử đây là số lượng features từ notebook của bạn
     feature_names_for_lime = [f"feature_{i+1}" for i in range(num_features_from_notebook)]
 
 num_training_features = len(feature_names_for_lime)
 
+# Tạo dữ liệu huấn luyện giả lập cho LIME, nên thay thế bằng dữ liệu thực hoặc mẫu từ dữ liệu huấn luyện gốc nếu có
 dummy_training_data_for_lime = np.random.rand(100, num_training_features)
 print(f"LIME Explainer initialized with {num_training_features} features: {feature_names_for_lime[:5]}...")
 
@@ -35,21 +38,24 @@ print(f"LIME Explainer initialized with {num_training_features} features: {featu
 class_names_for_lime = ['Anomaly', 'Normal'] # 0: Anomaly (-1 model), 1: Normal (1 model)
 
 explainer = lime.lime_tabular.LimeTabularExplainer(
-    training_data=dummy_training_data_for_lime,
+    training_data=dummy_training_data_for_lime, # Nên là dữ liệu huấn luyện đã được scale
     feature_names=feature_names_for_lime,
     class_names=class_names_for_lime,
-    mode='classification', 
+    mode='classification', # 'regression' nếu model dự đoán giá trị liên tục, 'classification' cho nhãn
     verbose=False,
-    random_state=42 
+    random_state=42 # Để kết quả có thể tái tạo
 )
 
-
+# Hàm dự đoán cho LIME
+# Input: X_lime_input_np (numpy array)
+# Output: numpy array có shape (n_samples, n_classes) với xác suất cho mỗi lớp
 def lime_predict_fn(X_lime_input_np):
-    decision_scores = model.decision_function(X_lime_input_np)
-    prob_normal = 1 / (1 + np.exp(-decision_scores))
-    prob_anomaly = 1 - prob_normal
-    return np.vstack((prob_anomaly, prob_normal)).T
 
+    decision_scores = model.decision_function(X_lime_input_np)
+    prob_normal = 1 / (1 + np.exp(-decision_scores)) # Sigmoid, score dương -> prob_normal cao
+    prob_anomaly = 1 - prob_normal                   # prob_anomaly cao khi score âm
+
+    return np.vstack((prob_anomaly, prob_normal)).T
 
 
 @app.route('/')
@@ -67,67 +73,54 @@ def predict():
             df = pd.DataFrame([data], columns=feature_names_for_lime)
         except ValueError as ve:
             return jsonify({"error": f"Input data error or incorrect columns: {str(ve)}"}), 400
-        
-        # Kiểm tra xem có feature nào bị thiếu không
-        for feature in feature_names_for_lime:
-            if feature not in data:
-                return jsonify({"error": f"Missing feature in input data: {feature}"}), 400
-        
-        # Đảm bảo thứ tự cột đúng như lúc scaler được fit
+
+        missing_features = [feature for feature in feature_names_for_lime if feature not in data]
+        if missing_features:
+            return jsonify({"error": f"Missing features in input data: {', '.join(missing_features)}"}), 400
+
         df = df[feature_names_for_lime]
-
-
-        df_scaled = scaler.transform(df.values) # Truyền numpy array để tránh warning
+        df_scaled = scaler.transform(df.values)
 
         anomaly_score = model.decision_function(df_scaled)
         score_value = anomaly_score[0]
 
-        warning = "No specific warning"
         if score_value < OPTIMAL_THRESHOLD:
-            prediction_label = -1  # Anomaly
+            prediction_label = -1
             prediction_string = "Anomaly"
-            if score_value < -0.1:
-                warning = "Anomaly - Rug Pull Project! 🚨"
+            warning = "Anomaly - Rug Pull Project! 🚨"
         else:
-            prediction_label = 1  # Normal
+            prediction_label = 1
             prediction_string = "Normal"
             warning = "Normal - Quite safe project."
 
-
-
-        # --- LIME Explanation ---
         lime_explanation_list = []
         try:
-            instance_to_explain_np = df_scaled[0] 
+            instance_to_explain_np = df_scaled[0]
             predicted_class_index_lime = 0 if prediction_label == -1 else 1
-
             explanation = explainer.explain_instance(
                 data_row=instance_to_explain_np,
                 predict_fn=lime_predict_fn,
-                num_features=10, # Số lượng feature muốn hiển thị trong giải thích
-                labels=(predicted_class_index_lime,) # Giải thích cho lớp được dự đoán
+                num_features=10,
+                labels=(predicted_class_index_lime,)
             )
-
             lime_explanation_list = explanation.as_list(label=predicted_class_index_lime)
         except Exception as lime_e:
             app.logger.error(f"LIME explanation error: {str(lime_e)}")
             lime_explanation_list = [{"error": f"Could not generate LIME explanation: {str(lime_e)}"}]
-        # --- End LIME Explanation ---
 
         return jsonify({
             "prediction_label_code": prediction_label,
             "prediction_label_string": prediction_string,
             "prediction_message": warning,
             "anomaly_score": float(score_value),
-            "lime_explanation": lime_explanation_list # Thêm giải thích LIME
+            "lime_explanation": lime_explanation_list
         })
 
-    except KeyError as ke: # Mặc dù đã kiểm tra ở trên, để phòng hờ
+    except KeyError as ke:
         return jsonify({"error": f"Missing feature in input data: {str(ke)}"}), 400
     except Exception as e:
         app.logger.error(f"Error during prediction: {str(e)}")
         return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
-
 
 @app.route('/test-sample', methods=['GET'])
 def test_sample():
@@ -152,31 +145,27 @@ def test_sample():
         'INACTIVITY_STATUS_Active': 1,
         'INACTIVITY_STATUS_Inactive': 0
     }
-    
-    # Đảm bảo tất cả các feature_names_for_lime đều có trong sample_input, nếu thiếu thì thêm giá trị mặc định (ví dụ 0)
+
     for feature in feature_names_for_lime:
         if feature not in sample_input:
-            sample_input[feature] = 0 # Hoặc một giá trị mặc định hợp lý khác
+            sample_input[feature] = 0
 
-    df = pd.DataFrame([sample_input], columns=feature_names_for_lime) # Sử dụng feature_names_for_lime để đảm bảo thứ tự
-    df = df[feature_names_for_lime] # Sắp xếp lại cột cho chắc chắn
+    df = pd.DataFrame([sample_input], columns=feature_names_for_lime)
+    df = df[feature_names_for_lime]
+    df_scaled = scaler.transform(df.values)
 
-    df_scaled = scaler.transform(df.values) # Truyền numpy array
-    
     anomaly_score_test = model.decision_function(df_scaled)
     score_value_test = anomaly_score_test[0]
 
     if score_value_test < OPTIMAL_THRESHOLD:
         prediction_label_test = -1
         prediction_string_test = "Anomaly"
-        if score_value_test < -0.1:
-             warning_test = "Anomaly - Rug Pull Project! 🚨"
+        warning_test = "Anomaly - Rug Pull Project! 🚨"
     else:
         prediction_label_test = 1
         prediction_string_test = "Normal"
         warning_test = "Normal - Quite safe project."
 
-    # --- LIME Explanation for test sample ---
     lime_explanation_list_test = []
     try:
         instance_to_explain_np = df_scaled[0]
@@ -191,7 +180,6 @@ def test_sample():
     except Exception as lime_e:
         app.logger.error(f"LIME explanation error for test sample: {str(lime_e)}")
         lime_explanation_list_test = [{"error": f"Could not generate LIME explanation: {str(lime_e)}"}]
-    # --- End LIME Explanation ---
 
     return jsonify({
         "input_sample": sample_input,
@@ -202,17 +190,45 @@ def test_sample():
         "lime_explanation": lime_explanation_list_test
     })
 
+# ... (phần định nghĩa feature_names_for_lime, explainer, lime_predict_fn) ...
+# Tôi sẽ giả định phần này đã có ở trên và đúng
+try:
+    feature_names_for_lime = scaler.feature_names_in_.tolist()
+except AttributeError:
+    print("Warning: scaler.feature_names_in_ not available. Manually defining feature names based on notebook context.")
+    num_features_from_notebook = 19
+    feature_names_for_lime = [f"feature_{i+1}" for i in range(num_features_from_notebook)]
+
+num_training_features = len(feature_names_for_lime)
+dummy_training_data_for_lime = np.random.rand(100, num_training_features)
+print(f"LIME Explainer initialized with {num_training_features} features: {feature_names_for_lime[:5]}...")
+class_names_for_lime = ['Anomaly', 'Normal']
+
+explainer = lime.lime_tabular.LimeTabularExplainer(
+    training_data=dummy_training_data_for_lime,
+    feature_names=feature_names_for_lime,
+    class_names=class_names_for_lime,
+    mode='classification',
+    verbose=False,
+    random_state=42
+)
+
+def lime_predict_fn(X_lime_input_np):
+    decision_scores = model.decision_function(X_lime_input_np)
+    prob_normal = 1 / (1 + np.exp(-decision_scores))
+    prob_anomaly = 1 - prob_normal
+    return np.vstack((prob_anomaly, prob_normal)).T
+
 
 if __name__ == '__main__':
-    # Thiết lập logging cơ bản cho Flask
     if not app.debug:
-        import logging
-        from logging.handlers import RotatingFileHandler
         file_handler = RotatingFileHandler('flask_app.log', maxBytes=1024 * 1024 * 100, backupCount=20)
         file_handler.setLevel(logging.ERROR)
         formatter = logging.Formatter("[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s")
         file_handler.setFormatter(formatter)
         app.logger.addHandler(file_handler)
+        # Quan trọng: đặt level cho logger của app để file_handler có tác dụng
+        app.logger.setLevel(logging.INFO) # Hoặc logging.ERROR tùy nhu cầu
 
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True) # debug=True hữu ích khi phát triển
+    app.run(host='0.0.0.0', port=port, debug=True)
