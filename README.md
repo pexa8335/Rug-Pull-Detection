@@ -60,8 +60,7 @@ If you use the dataset in your work, please cite the original authors:
 
 | Name              | Role                                      |
 |-------------------|-------------------------------------------|
-| Phan Duc Anh      | Team Leader, Machine Learning, Management |
-| Nguyen Tran Lam   | Idea Contributor, Documentation           |
+| Phan Duc Anh      | Team Leader, AI Engineer, Management |
 | Nguyen Minh Dai   | Backend Developer                         |
 | Vo Van Quoc       | Frontend Developer                        |
 | Vo Tuan Hung      | Frontend Developer                        |
